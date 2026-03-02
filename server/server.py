@@ -3,15 +3,16 @@ from pathlib import Path
 
 # Directories
 BASE_DIR = Path(__file__).resolve().parent.parent
+RESOURCES_DIR = Path(BASE_DIR) / "resources"
 
 # PDF Pointers
-LOGIC_PATH = Path(BASE_DIR) / "resources" / "Logic.pdf"
-PREDICATE_LOGIC_PATH = Path(BASE_DIR) / "resources" / "Predicate_Logic.pdf"
-PROOFS_1_PATH = Path(BASE_DIR) / "resources" / "Proofs_1.pdf"
-PROOFS_2_PATH = Path(BASE_DIR) / "resources" / "Proofs_2.pdf"
-SETS_PATH = Path(BASE_DIR) / "resources" / "Sets.pdf"
-FUNCTIONS_PATH = Path(BASE_DIR) / "resources" / "Functions.pdf"
-ALGORITHMS_PATH = Path(BASE_DIR) / "resources" / "Algorithms_And_Complexities.pdf"
+LOGIC_PATH = Path(RESOURCES_DIR) / "Logic.pdf"
+PREDICATE_LOGIC_PATH = Path(RESOURCES_DIR) / "Predicate_Logic.pdf"
+PROOFS_1_PATH = Path(RESOURCES_DIR) / "Proofs_1.pdf"
+PROOFS_2_PATH = Path(RESOURCES_DIR) / "Proofs_2.pdf"
+SETS_PATH = Path(RESOURCES_DIR) / "Sets.pdf"
+FUNCTIONS_PATH = Path(RESOURCES_DIR) / "Functions.pdf"
+ALGORITHMS_PATH = Path(RESOURCES_DIR) / "Algorithms_And_Complexities.pdf"
 
 server = FastMCP("CSCE 222 Server")
 
