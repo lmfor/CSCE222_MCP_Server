@@ -1,57 +1,45 @@
 from fastmcp import FastMCP
 from pathlib import Path
+from pypdf import PdfReader
 
-# Directories
 BASE_DIR = Path(__file__).resolve().parent.parent
-RESOURCES_DIR = Path(BASE_DIR) / "resources"
+PDF_DIR = BASE_DIR / "resources"
 
-# PDF Pointers
-LOGIC_PATH = Path(RESOURCES_DIR) / "Logic.pdf"
-PREDICATE_LOGIC_PATH = Path(RESOURCES_DIR) / "Predicate_Logic.pdf"
-PROOFS_1_PATH = Path(RESOURCES_DIR) / "Proofs_1.pdf"
-PROOFS_2_PATH = Path(RESOURCES_DIR) / "Proofs_2.pdf"
-SETS_PATH = Path(RESOURCES_DIR) / "Sets.pdf"
-FUNCTIONS_PATH = Path(RESOURCES_DIR) / "Functions.pdf"
-ALGORITHMS_PATH = Path(RESOURCES_DIR) / "Algorithms_And_Complexities.pdf"
+server = FastMCP("CSCE 222 Server")
+
+# Load all PDFs once at startup
+DOCUMENTS = {}
+
+for pdf_path in PDF_DIR.glob("*.pdf"):
+    reader = PdfReader(str(pdf_path))
+    text = ""
+    for page in reader.pages:
+        text += page.extract_text() or ""
+    DOCUMENTS[pdf_path.stem] = text
 
 server = FastMCP("CSCE 222 Server")
 
 
-@server.resource("pdf://logic")
-def logic_pdf() -> bytes:
-    return LOGIC_PATH.read_bytes()
+@server.tool
+def search_notes(query: str) -> str:
+    """
+    Very simple keyword search across all PDFs.
+    Returns matching excerpts.
+    """
+    results = []
 
+    for name, text in DOCUMENTS.items():
+        if query.lower() in text.lower():
+            # Return first 1000 characters around match
+            idx = text.lower().find(query.lower())
+            snippet = text[max(0, idx - 300): idx + 700]
+            results.append(f"\n--- {name} ---\n{snippet}")
 
-@server.resource("pdf://predicate_logic")
-def predicate_logic_pdf() -> bytes:
-    return PREDICATE_LOGIC_PATH.read_bytes()
+    if not results:
+        return "No matches found."
 
-
-@server.resource("pdf://proofs_1")
-def proofs_1_pdf() -> bytes:
-    return PROOFS_1_PATH.read_bytes()
-
-
-@server.resource("pdf://proofs_2")
-def proofs_2_pdf() -> bytes:
-    return PROOFS_2_PATH.read_bytes()
-
-
-@server.resource("pdf://sets")
-def sets_pdf() -> bytes:
-    return SETS_PATH.read_bytes()
-
-
-@server.resource("pdf://functions")
-def functions_pdf() -> bytes:
-    return FUNCTIONS_PATH.read_bytes()
-
-
-@server.resource("pdf://algorithms")
-def algorithms_pdf() -> bytes:
-    return ALGORITHMS_PATH.read_bytes()
+    return "\n\n".join(results)
 
 
 if __name__ == "__main__":
     server.run()
-
