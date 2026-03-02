@@ -7,39 +7,64 @@ PDF_DIR = BASE_DIR / "resources"
 
 server = FastMCP("CSCE 222 Server")
 
-# Load all PDFs once at startup
-DOCUMENTS = {}
+# doc -> list of page texts
+DOC_PAGES: dict[str, list[str]] = {}
 
-for pdf_path in PDF_DIR.glob("*.pdf"):
-    reader = PdfReader(str(pdf_path))
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() or ""
-    DOCUMENTS[pdf_path.stem] = text
+def load_pdfs():
+    for pdf_path in PDF_DIR.glob("*.pdf"):
+        reader = PdfReader(str(pdf_path))
+        pages = []
+        for page in reader.pages:
+            pages.append(page.extract_text() or "")
+        DOC_PAGES[pdf_path.stem] = pages
 
-server = FastMCP("CSCE 222 Server")
-
+load_pdfs()
 
 @server.tool
-def search_notes(query: str) -> str:
+def list_docs() -> list[str]:
+    return sorted(DOC_PAGES.keys())
+
+@server.tool
+def search_notes(query: str, max_hits: int = 5) -> list[dict]:
     """
-    Very simple keyword search across all PDFs.
-    Returns matching excerpts.
+    Return the pages that contain the query.
     """
-    results = []
+    q = query.lower()
+    hits = []
 
-    for name, text in DOCUMENTS.items():
-        if query.lower() in text.lower():
-            # Return first 1000 characters around match
-            idx = text.lower().find(query.lower())
-            snippet = text[max(0, idx - 300): idx + 700]
-            results.append(f"\n--- {name} ---\n{snippet}")
+    for doc, pages in DOC_PAGES.items():
+        for i, text in enumerate(pages):
+            if q in text.lower():
+                # small snippet preview
+                idx = text.lower().find(q)
+                snippet = text[max(0, idx - 250): idx + 750]
+                hits.append({
+                    "doc": doc,
+                    "page": i,              # 0-indexed
+                    "cite": f"{doc} p.{i+1}",
+                    "snippet": snippet
+                })
+                if len(hits) >= max_hits:
+                    return hits
 
-    if not results:
-        return "No matches found."
+    return hits
 
-    return "\n\n".join(results)
+@server.tool
+def get_page(doc: str, page: int) -> dict:
+    """
+    Return full extracted text for one page.
+    """
+    if doc not in DOC_PAGES:
+        raise ValueError(f"Unknown doc: {doc}")
+    if page < 0 or page >= len(DOC_PAGES[doc]):
+        raise IndexError("Page out of range")
 
+    return {
+        "doc": doc,
+        "page": page,
+        "cite": f"{doc} p.{page+1}",
+        "text": DOC_PAGES[doc][page]
+    }
 
 if __name__ == "__main__":
     server.run()
